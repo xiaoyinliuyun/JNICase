@@ -1,6 +1,9 @@
 package com.sankuai.jnicase;
 
 
+import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
+
 public class JniNativeClassCase {
 
     static {
@@ -8,6 +11,14 @@ public class JniNativeClassCase {
     }
 
     public static void main(String[] args) {
+        //testCase();
+        testNativeSync();
+        //caseDirectByteBuffer();
+        //caseJniReflected();
+        //caseJVMJNI();
+    }
+
+    private static void testCase() {
         createPersonByLoader();
         Person person = caseFindClass();
         System.out.println(person);
@@ -18,7 +29,7 @@ public class JniNativeClassCase {
         Person localRef = caseCreateLocalRef(person);
         Person weakGlobalRef = caseCreateWeakGlobalRef(person);
         System.gc();
-        new Thread(){
+        new Thread() {
             @Override
             public void run() {
                 super.run();
@@ -44,12 +55,45 @@ public class JniNativeClassCase {
         } catch (Exception e) {
             System.out.println("exception is ok ok ok ok");
         }
+
+        String result = caseJniString();
+        System.out.println("你好 -> " + result + "OOO");
+
+        byte[] byteArray = new byte[16];
+        int len = caseJniArray(byteArray);
+        System.out.println(" result len  -> " + len);
     }
 
-    private static void createPersonByLoader(){
+    private static Person person = new Person();
+
+    private static void testNativeSync() {
+        JniNativeClassCase mainClass = new JniNativeClassCase();
+        for (int i = 0; i < 5; i++) {
+            new Thread() {
+                @Override
+                public void run() {
+                    super.run();
+                    while (true) {
+                        syncTest(mainClass);
+                        try {
+                            Thread.sleep(100);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }.start();
+        }
+    }
+
+    private static void syncTest(JniNativeClassCase mainClass) {
+        caseForThreadSync(person);
+    }
+
+    private static void createPersonByLoader() {
         CustomClassLoader loader = new CustomClassLoader("E:/meituan/JNICase/build/classes/java/main/");
         byte[] bytes = loader.readFileToByteArray("com.sankuai.jnicase.Person");
-        Person person = caseDefineClass(loader, bytes, bytes.length,Person.class);
+        Person person = caseDefineClass(loader, bytes, bytes.length, Person.class);
         System.out.println("by native classloader -> " + person);
 
         /*
@@ -87,7 +131,7 @@ public class JniNativeClassCase {
         */
     }
 
-    public static native Person caseDefineClass(CustomClassLoader loader, byte[] buf,int len,Class<?> personClazzSource);
+    public static native Person caseDefineClass(CustomClassLoader loader, byte[] buf, int len, Class<?> personClazzSource);
 
     public static native Person caseFindClass();
 
@@ -104,4 +148,16 @@ public class JniNativeClassCase {
     public static native Person caseCreateWeakGlobalRef(Person person);
 
     public static native void caseException(CustomException exception);
+
+    public static native String caseJniString();
+
+    public static native int caseJniArray(byte[] data);
+
+    public static native void caseForThreadSync(Person person);
+
+    public static native ByteBuffer caseDirectByteBuffer();
+
+    public static native void caseJniReflected();
+
+    public static native void caseJVMJNI();
 }

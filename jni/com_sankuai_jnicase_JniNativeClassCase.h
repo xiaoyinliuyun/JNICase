@@ -79,6 +79,54 @@ JNIEXPORT jobject JNICALL Java_com_sankuai_jnicase_JniNativeClassCase_caseCreate
 JNIEXPORT void JNICALL Java_com_sankuai_jnicase_JniNativeClassCase_caseException
   (JNIEnv *, jclass, jthrowable);
 
+/*
+ * Class:     com_sankuai_jnicase_JniNativeClassCase
+ * Method:    caseJniString
+ * Signature: ()Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_com_sankuai_jnicase_JniNativeClassCase_caseJniString
+  (JNIEnv *, jclass);
+
+/*
+ * Class:     com_sankuai_jnicase_JniNativeClassCase
+ * Method:    caseJniArray
+ * Signature: ([B)I
+ */
+JNIEXPORT jint JNICALL Java_com_sankuai_jnicase_JniNativeClassCase_caseJniArray
+  (JNIEnv *, jclass, jbyteArray);
+
+/*
+ * Class:     com_sankuai_jnicase_JniNativeClassCase
+ * Method:    caseForThreadSync
+ * Signature: (Lcom/sankuai/jnicase/Person;)V
+ */
+JNIEXPORT void JNICALL Java_com_sankuai_jnicase_JniNativeClassCase_caseForThreadSync
+  (JNIEnv *, jclass, jobject);
+
+/*
+ * Class:     com_sankuai_jnicase_JniNativeClassCase
+ * Method:    caseDirectByteBuffer
+ * Signature: ()Ljava/nio/ByteBuffer;
+ */
+JNIEXPORT jobject JNICALL Java_com_sankuai_jnicase_JniNativeClassCase_caseDirectByteBuffer
+  (JNIEnv *, jclass);
+
+/*
+ * Class:     com_sankuai_jnicase_JniNativeClassCase
+ * Method:    caseJniReflected
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_com_sankuai_jnicase_JniNativeClassCase_caseJniReflected
+  (JNIEnv *, jclass);
+
+/*
+ * Class:     com_sankuai_jnicase_JniNativeClassCase
+ * Method:    caseJVMJNI
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_com_sankuai_jnicase_JniNativeClassCase_caseJVMJNI
+  (JNIEnv *, jclass);
+
 #ifdef __cplusplus
 }
 #endif

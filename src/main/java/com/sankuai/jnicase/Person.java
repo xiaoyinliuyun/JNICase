@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 public class Person implements IWorkable{
     public String name;
     public int age;
+    private String password;
 
     public Person(){
     }
@@ -21,6 +22,10 @@ public class Person implements IWorkable{
                 "name='" + name + '\'' +
                 ", age=" + age +
                 '}';
+    }
+
+    private String password(){
+        return password;
     }
 
     @Override

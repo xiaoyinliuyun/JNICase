@@ -1,5 +1,6 @@
 #include "com_sankuai_jnicase_JniNativeClassCase.h"
 #include <iostream>
+#include <case.h>
 using namespace std;
 
 /*
@@ -308,4 +309,225 @@ JNIEXPORT void JNICALL Java_com_sankuai_jnicase_JniNativeClassCase_caseException
 	  }else{
 		  cout << "ExceptionCheck2: no exception " << endl;
 	  }
+}
+
+/*
+ * Class:     com_sankuai_jnicase_JniNativeClassCase
+ * Method:    caseJniString
+ * Signature: ()Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_com_sankuai_jnicase_JniNativeClassCase_caseJniString
+  (JNIEnv * env, jclass){
+	  // Unicode 字符集 用4个字节表示1个字符 ‘你’ 00004f60   ‘好’ 0000597d
+	  // UTF-8 编码规则 1+11(两个1表示后面有几个字节)+0+xxxx + 10+xxxxxx（xxxUCS编码） + 10+xxxxxx（xxxUCS编码）
+	  // GBK 编码规则 用2个字节表示1个字符 中文最高位是1   GBK与UTF8必须通过Unicode编码转换
+	  // 宽字符 == Unicode编码的字符集
+	  WCHAR s[] = L"你好";
+	  WCHAR* p_s = s;
+	  int wlen = wcslen(s);
+	  cout << "wchar wlen -> " << wlen << endl;
+	  // unicode 转 utf-8编码
+	  const char* utfChar = u2utf(s);
+	  jstring result = env->NewString((const jchar*)p_s,wlen);
+	  jstring utfRes = env->NewStringUTF(utfChar);
+	  cout << "unicode Result len -> " << env->GetStringLength(result) << endl;
+	  
+	  // 指针初始化
+	  jboolean* p_is_copy = new jboolean();
+	  const jchar* text = env->GetStringChars(result,p_is_copy);
+	  for(int i = 0; i<wlen ; i++){
+		  cout << " ----- > " << *text << endl; //unicode码值
+		  text+=1;
+	  }
+	  if(*p_is_copy){ 
+		  //返回的字符是java字符串的拷贝
+		  cout << "copy -> new char" << endl; //实际执行结果
+	  }else{
+		  //指针指向原始java字符串的内存
+		  cout << "source -> old char" << endl;
+	  }
+	  int utfLen = env->GetStringUTFLength(utfRes);
+	  const char* utfText = env->GetStringUTFChars(utfRes,p_is_copy);
+	  cout << "utf8 Result len -> " <<utfLen << endl;
+	  for(int i = 0; i< utfLen ; i++){
+		  cout << " ----- > " << *utfText << endl; //码值
+		  utfText+=1;
+	  }
+
+	  
+	  WCHAR* buf = (WCHAR*)malloc(sizeof(WCHAR));
+	  env->GetStringRegion(result,0,1,(jchar*)buf);
+	  jstring regionResult = env->NewString((const jchar*)buf,1);
+	  WCHAR * p_Buf = L"中华人民共和国";
+	  jstring content = env->NewString((const jchar*)p_Buf,7);
+	  WCHAR* mBuf = (WCHAR*)malloc(sizeof(WCHAR)*4);
+	  env->GetStringRegion(content,1,4,(jchar*)mBuf);
+	  jstring regionResult1 = env->NewString((const jchar*)mBuf,4);
+
+	  
+	  char *uBuf = new char[0];
+	  env->GetStringUTFRegion(utfRes,0,1,uBuf);//len 实际字符数量，而不是字节数量
+	  jstring ssd = env->NewStringUTF(uBuf);
+
+
+	  
+
+	  const jchar * p_str = env->GetStringCritical(content,NULL);
+	  cout << "---------------index: 5 -> " << *(p_str+5) << endl;
+	  env->ReleaseStringCritical(content,p_str);
+		  
+	  env->ReleaseStringChars(result,text-wlen);//指针位置需要重置
+	  env->ReleaseStringUTFChars(utfRes,utfText-utfLen);
+	  //return result;
+	  //return regionResult1;
+	  //return utfRes;
+	  return ssd;
+}
+
+/*
+ * Class:     com_sankuai_jnicase_JniNativeClassCase
+ * Method:    caseJniArray
+ * Signature: ([B)I
+ */
+JNIEXPORT jint JNICALL Java_com_sankuai_jnicase_JniNativeClassCase_caseJniArray
+  (JNIEnv *env, jclass clazz, jbyteArray data){
+	  jsize len = env->GetArrayLength(data);
+	  cout << "len -> " << len << endl;
+	  //基本数据类型数组 NEW
+	  jbyteArray byteArray = env->NewByteArray(10);
+	  // GET
+	  jbyte* p_data = env->GetByteArrayElements(byteArray,NULL);
+	  // RELEASE mode 0,JNI_COMMIT(1),JNI_ABORT(2)
+	  env->ReleaseByteArrayElements(byteArray,p_data,JNI_COMMIT);
+	  // GET Region
+	  jbyte* buf = new jbyte[5];
+	  env->GetByteArrayRegion(byteArray,0,5,buf);
+	  // Set Region
+	  env->SetByteArrayRegion(byteArray,5,5,buf);
+	  // GET Critical 为了不复制数组
+	  env->GetPrimitiveArrayCritical(byteArray,NULL);
+	  // RELEASE Criticalk
+	  env->ReleasePrimitiveArrayCritical(byteArray,buf,0);
+
+	  //对象数组 NEW
+	  jobjectArray mainArray = env->NewObjectArray(10,clazz,NULL);
+	  //SET
+	  jobject main = env->AllocObject(clazz);
+	  env->SetObjectArrayElement(mainArray,6,main);
+	  //GET
+	  jobject mainGet = env->GetObjectArrayElement(mainArray,6);
+	  jsize mainLen = env->GetArrayLength(mainArray);
+	  cout << "mainLen -> " << mainLen << endl;
+	  return len;
+}
+
+/*
+ * Class:     com_sankuai_jnicase_JniNativeClassCase
+ * Method:    caseForThreadSync
+ * Signature: (Lcom/sankuai/jnicase/Person;)V
+ */
+JNIEXPORT void JNICALL Java_com_sankuai_jnicase_JniNativeClassCase_caseForThreadSync
+  (JNIEnv *env, jclass jnicase, jobject person){
+	  
+	  jint enterOK = env->MonitorEnter(jnicase);
+	  if(enterOK == JNI_OK){
+		  cout << "enter ok" << endl;
+	  }
+	  
+	  jclass clazz = env->GetObjectClass(person);
+	  jfieldID ageId = env->GetFieldID(clazz,"age","I");
+	  jint age = env->GetIntField(person,ageId);
+	  env->SetIntField(person,ageId,age+1);
+	  jint newAge = env->GetIntField(person,ageId);
+
+	  //获取当前线程名：
+	  jclass threadClazz = env->FindClass("java/lang/Thread");
+	  jmethodID currentThreadID = env->GetStaticMethodID(threadClazz,"currentThread","()Ljava/lang/Thread;");
+	  jobject thread = env->CallStaticObjectMethod(threadClazz,currentThreadID);
+	  jmethodID getNameId = env->GetMethodID(threadClazz,"getName","()Ljava/lang/String;");
+	  jstring name = (jstring)env->CallObjectMethod(thread,getNameId);
+	  cout << "thread name -> " << name << " age -> " << newAge << endl;
+	  
+	  jint exitOK = env->MonitorExit(jnicase);
+	  if(exitOK == JNI_OK){
+		  cout << "exitOK ok" << endl;
+	  }
+	  
+}
+
+/*
+ * Class:     com_sankuai_jnicase_JniNativeClassCase
+ * Method:    caseDirectByteBuffer
+ * Signature: ()Ljava/nio/ByteBuffer;
+ */
+JNIEXPORT jobject JNICALL Java_com_sankuai_jnicase_JniNativeClassCase_caseDirectByteBuffer
+  (JNIEnv *env, jclass){
+	  char* address = new char[1024];
+	  jobject buffer = env->NewDirectByteBuffer(address,1024);
+	  int* content = (int*)env->GetDirectBufferAddress(buffer);
+	  cout << "content -> " << content << endl;
+	  jlong capacity = env->GetDirectBufferCapacity(buffer);
+	  cout << "capacity -> " << capacity << endl;
+	  return buffer;
+}
+
+
+/*
+ * Class:     com_sankuai_jnicase_JniNativeClassCase
+ * Method:    caseJniReflected
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_com_sankuai_jnicase_JniNativeClassCase_caseJniReflected
+  (JNIEnv *env, jclass){
+	  
+	  jclass personClass = env->FindClass("com/sankuai/jnicase/Person");
+	  jobject person = env->AllocObject(personClass);
+
+	  // 相互转换methodID相同 实际场景？
+	  jmethodID passwordMId = env->GetMethodID(personClass,"password","()Ljava/lang/String;");
+	  jobject method = env->ToReflectedMethod(personClass,passwordMId,false);
+	  jmethodID passwordMMID = env->FromReflectedMethod(method);
+
+	  cout << "passwordMId -> " << passwordMId << endl;
+	  cout << "passwordMMID -> " << passwordMMID << endl;
+
+
+	  // 相互转换fieldID相同 实际场景？
+	  jfieldID passwordFID = env->GetFieldID(personClass,"password","Ljava/lang/String;");
+	  jobject field = env->ToReflectedField(personClass,passwordFID,false);
+	  jfieldID passwordFFID = env->FromReflectedField(field);
+
+	  cout << "passwordFID -> " << passwordFID << endl;
+	  cout << "passwordFFID -> " << passwordFFID << endl;
+
+	  jint version = env->GetVersion();
+	  cout << "version -> " << version << endl;
+}
+
+
+/*
+ * Class:     com_sankuai_jnicase_JniNativeClassCase
+ * Method:    caseJVMJNI
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_com_sankuai_jnicase_JniNativeClassCase_caseJVMJNI
+  (JNIEnv *env, jclass){
+	  /*
+	  JavaVM* vm = (JavaVM*)malloc(sizeof(JavaVM));
+	  jint result = env->GetJavaVM(&vm);
+	  cout << "result -> " << result << endl;
+	  
+	  JavaVMInitArgs vm_args;
+	  JavaVMOption option[4];
+
+	  option[0].optionString = "-Djava.compiler=NONE";
+	  option[1].optionString = "-Djava.class.path=e:\\meituan\\JNICase\\build\\classes\\java\\main\\com\\sankuai\\jnicase";
+	  option[2].optionString = "-Djava.library.path=";
+	  option[3].optionString = "-verbose:jni";
+	  
+	  int res = JNI_CreateJavaVM(&vm,(void **)&env,&vm_args);
+	  cout << "res -> " << res << endl;
+	  */
+	  //通过可执行程序来 调用java虚拟机进行操作
+
 }

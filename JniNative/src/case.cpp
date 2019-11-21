@@ -1,5 +1,6 @@
 #include "com_sankuai_jnicase_JniNativeClassCase.h"
 #include <iostream>
+#include <Windows.h>
 #include <case.h>
 using namespace std;
 
@@ -288,7 +289,16 @@ JNIEXPORT void JNICALL Java_com_sankuai_jnicase_JniNativeClassCase_caseException
 	  //相当于调用printStackTrace(); 拦截后不会回调到java层
 	  //env->ExceptionDescribe();
 
-	  jboolean checkResult1 = env->ExceptionCheck();
+	  /**
+	  *if ((*env)->ExceptionCheck(env)) {  // 检查JNI调用是否有引发异常
+       (*env)->ExceptionDescribe(env);
+       (*env)->ExceptionClear(env);        // 清除引发的异常，在Java层不会打印异常的堆栈信息
+       (*env)->ThrowNew(env,(*env)->FindClass(env,"java/lang/Exception"),"JNI抛出的异常！");
+       //return;
+   }
+	  */
+
+	  jboolean checkResult1 = env->ExceptionCheck();//用户捕获异常 
 	  if(checkResult1){
 		  cout << "ExceptionCheck1: has exception "<< endl;
 	  }else{
@@ -504,6 +514,17 @@ JNIEXPORT void JNICALL Java_com_sankuai_jnicase_JniNativeClassCase_caseJniReflec
 	  cout << "version -> " << version << endl;
 }
 
+typedef jint (__stdcall *JNICreateJavaVM)(JavaVM **vm, void**env, void *args);
+typedef jint (__stdcall *JNIGetDefaultJavaVMInitArgs)(void*vm_args);
+typedef jint (__stdcall *JNIGetCreateJavaVMs)(JavaVM**, jsize, jsize*);
+typedef jint (__stdcall *JNIOnLoad)(JavaVM*, void*reserved);
+typedef jint (__stdcall *JNIOnUnload)(JavaVM*, void*reserved);
+
+JNICreateJavaVM jniCreateJavaVM;
+JNIGetDefaultJavaVMInitArgs jniGetDefaultJavaVMInitArgs;
+JNIGetCreateJavaVMs jniGetCreateJavaVMs;
+JNIOnLoad jniOnLoad;
+JNIOnUnload jniOnUnload;
 
 /*
  * Class:     com_sankuai_jnicase_JniNativeClassCase
@@ -530,4 +551,98 @@ JNIEXPORT void JNICALL Java_com_sankuai_jnicase_JniNativeClassCase_caseJVMJNI
 	  */
 	  //通过可执行程序来 调用java虚拟机进行操作
 
+	  
+	WCHAR* path = L"E:\\meituan\\JNICase\\JNIEXE\\Debug\\jre1.8.0_221\\bin\\client\\jvm.dll";
+	HINSTANCE dll = LoadLibraryW(path);
+	//free(path);
+	//创建JVM
+	jniCreateJavaVM = (JNICreateJavaVM)GetProcAddress(dll,"JNI_CreateJavaVM");
+	jniGetDefaultJavaVMInitArgs = (JNIGetDefaultJavaVMInitArgs)GetProcAddress(dll,"JNI_GetDefaultJavaVMInitArgs");
+	jniGetCreateJavaVMs = (JNIGetCreateJavaVMs)GetProcAddress(dll,"JNI_GetCreateJavaVMs");
+	GetProcAddress(dll,"JNI_OnLoad");
+	jniOnLoad = (JNIOnLoad)GetProcAddress(dll,"JNI_OnLoad");
+	jniOnUnload = (JNIOnUnload)GetProcAddress(dll,"JNI_OnUnload");
+	/*
+	JavaVMInitArgs* p_vm_args = (JavaVMInitArgs*)malloc(sizeof(JavaVMInitArgs) + sizeof(JavaVMOption) * 4);
+	jint res = jniGetDefaultJavaVMInitArgs(p_vm_args);
+	cout << "get args res " << res << endl;
+	cout <<"vm version -> " << p_vm_args->version <<endl;
+	cout <<"vm nOptions -> " << p_vm_args->nOptions << endl;
+	cout <<"vm ignoreUnrecognized -> " << p_vm_args->ignoreUnrecognized <<endl;
+	JavaVMOption* op = p_vm_args->options;
+	
+	cout <<"vm option 0 -> " << op->optionString << endl;
+	cout <<"vm option 1 -> " << op->optionString << endl;
+	cout <<"vm option 2 -> " << op->optionString << endl;
+	cout <<"vm option 3 -> " << op->optionString << endl;
+	*/
+	/*
+	JavaVM * vm;
+	jsize nVMs;
+	jint resGet = jniGetCreateJavaVMs(&vm,1,&nVMs);
+	cout <<"resGet -> " << resGet << endl;
+	*/
+}
+
+JNIEXPORT jstring JNICALL caseNOh(JNIEnv *env, jclass clazz, int number){
+	return env->NewStringUTF("HELLO WORLD");
+}
+
+static const char *CLASS_NAME = "com/sankuai/jnicase/JniNativeClassCase";//类名
+
+static JNINativeMethod method = {
+	"caseNOh",
+	"(I)Ljava/lang/String;",
+	(void *)caseNOh
+};
+
+static bool bindNative(JNIEnv * env){
+	jclass clazz = env->FindClass(CLASS_NAME);
+	if(clazz == NULL){
+		return false;
+	}
+	return env->RegisterNatives(clazz,&method,1);
+}
+
+static bool unBindNative(JNIEnv * env){
+	jclass clazz = env->FindClass(CLASS_NAME);
+	if(clazz == NULL){
+		return false;
+	}
+	return env->UnregisterNatives(clazz);
+}
+
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm,void *reserved){
+	JNIEnv* env = NULL;
+	jint result = -1;
+	if(vm->GetEnv((void **)&env,JNI_VERSION_1_8) != JNI_OK){
+		return result;
+	}
+
+	bool res = bindNative(env);
+	cout << "OnLoad res -> " << res << endl;
+	return JNI_VERSION_1_8;
+}
+
+JNIEXPORT void JNICALL JNI_OnUnload(JavaVM* vm,void *reserved){
+	JNIEnv* env = NULL;
+	if(vm->GetEnv((void**)&env,JNI_VERSION_1_8) != JNI_OK){
+		return;
+	}
+	bool res = unBindNative(env);
+	cout << "UnLoad res -> " << res << endl;
+}
+
+
+// JNIEnv 创建它的线程有效
+
+JNIEXPORT void JNICALL attachAndDetachCurrent(JNIEnv* env,jclass clazz){
+	JavaVM * vm;
+	env->GetJavaVM(&vm);
+	
+	//在子线程创建的env 需要通过下面方法绑定、解绑到JVM，才能操作JVM内地数据。
+	JNIEnv* p_env;
+	vm->AttachCurrentThread((void**)&p_env,nullptr);
+
+	vm->DetachCurrentThread();
 }

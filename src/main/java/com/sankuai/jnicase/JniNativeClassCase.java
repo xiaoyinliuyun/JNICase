@@ -12,10 +12,12 @@ public class JniNativeClassCase {
 
     public static void main(String[] args) {
         //testCase();
-        testNativeSync();
+        //testNativeSync();
         //caseDirectByteBuffer();
         //caseJniReflected();
         //caseJVMJNI();
+        String result = caseNOh(999);
+        System.out.println(result);
     }
 
     private static void testCase() {
@@ -160,4 +162,6 @@ public class JniNativeClassCase {
     public static native void caseJniReflected();
 
     public static native void caseJVMJNI();
+
+    public static native String caseNOh(int number);
 }

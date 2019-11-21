@@ -13,5 +13,13 @@
 /JniNative/JniNative.sdf
 /JniNative/JniNative.suo
 /JniNative/ipch
-/JniNative/.vs
+
+/JNIEXE/JNIEXE.opensdf
+/JNIEXE/JNIEXE.sdf
+/JNIEXE/JNIEXE.suo
+/JNIEXE/Debug
+/JNIEXE/Release
+/JNIEXE/JNIEXE/Debug
+/JNIEXE/JNIEXE/Release
+/JNIEXE/ipch
 *.log
